@@ -1,4 +1,4 @@
-package dad.enviaremail2;
+package dad.enviaremail;
 
 public class Main {
 

@@ -1,4 +1,4 @@
-package dad.enviaremail2;
+package dad.enviaremail;
 
 import javafx.application.Application;
 import javafx.scene.Scene;

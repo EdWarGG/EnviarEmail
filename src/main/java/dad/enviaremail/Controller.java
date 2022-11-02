@@ -1,4 +1,4 @@
-package dad.enviaremail2;
+package dad.enviaremail;
 
 import java.io.IOException;
 import java.net.URL;

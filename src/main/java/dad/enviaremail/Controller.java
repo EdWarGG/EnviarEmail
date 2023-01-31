@@ -6,13 +6,13 @@ import java.util.ResourceBundle;
 
 import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.Email;
-import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -24,7 +24,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 
 public class Controller implements Initializable{
 	
@@ -38,9 +38,12 @@ public class Controller implements Initializable{
 	StringProperty mensaje = new SimpleStringProperty();
 	BooleanProperty ssl = new SimpleBooleanProperty();
 	
+	private Task<Void> tarea;
+
+	
 	//view
     @FXML
-    private AnchorPane view;
+    private HBox view;
     @FXML
     private TextField asuntoText;
     @FXML
@@ -85,7 +88,7 @@ public class Controller implements Initializable{
 
 	}
 
-	public AnchorPane getView() {
+	public HBox getView() {
 		return view;
 	}
 
@@ -95,34 +98,41 @@ public class Controller implements Initializable{
     }
 
     @FXML
-    void onEnviarAction(ActionEvent event) throws EmailException {
+    void onEnviarAction(ActionEvent event) {	
+	   	tarea = new Task<Void>() {
+	    	@Override
+	    	protected Void call() throws Exception {
+		    	Email email = new SimpleEmail();
+		    	email.setHostName(servidor.getValue());
+		    	email.setSmtpPort(Integer.parseInt(puerto.getValue()));
+		    	email.setAuthenticator(new DefaultAuthenticator(remitente.getValue(),contraseña.getValue() ));
+		   		email.setSSLOnConnect(ssl.getValue());
+		   		email.setFrom(remitente.getValue());
+		   		email.setSubject(asunto.getValue());
+		   		email.setMsg(mensaje.getValue());
+		   		email.addTo(destinatario.getValue());
+		    	email.send();
+	    		Thread.sleep(10L);
+	    		return null;
+	    	}
+		};
 		
-		try {
-			Email email = new SimpleEmail();
-			email.setHostName(servidor.getValue());
-			email.setSmtpPort(Integer.parseInt(puerto.getValue()));
-			email.setAuthenticator(new DefaultAuthenticator(remitente.getValue(),contraseña.getValue() ));
-			email.setSSLOnConnect(ssl.getValue());
-			email.setFrom(remitente.getValue());
-			email.setSubject(asunto.getValue());
-			email.setMsg(mensaje.getValue());
-			email.addTo(destinatario.getValue());
-			email.send();
+		tarea.setOnSucceeded(e -> {
 			Alert alertAcierto = new Alert(AlertType.INFORMATION);
-			alertAcierto.setTitle("Mensaje enviado");
-			alertAcierto.setHeaderText("Mensaje enviado con éxito a '" + destinatario.getValue() + "'.");
-			alertAcierto.showAndWait();
-			
-		} catch (EmailException e) {
-			e.printStackTrace();
+    		alertAcierto.setTitle("Mensaje enviado");
+    		alertAcierto.setHeaderText("Mensaje enviado con éxito a '" + destinatario.getValue() + "'.");
+    		alertAcierto.showAndWait();
+		});
+
+		tarea.setOnFailed(e -> {
 			Alert alertError = new Alert(AlertType.ERROR);
 			alertError.setTitle("Error");
 			alertError.setHeaderText("No se pudo enviar el email.");
 			alertError.setContentText("Invalid message supplied");
 			alertError.showAndWait();
-		}
+		});
 
-		
+		new Thread(tarea).start();
 	}
     
 
